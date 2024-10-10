@@ -1,4 +1,5 @@
 const {Product} = require('../models');
+const { Op } = require('sequelize');
 
 const createProduct = async(req, res) =>{
     try {
@@ -8,7 +9,7 @@ const createProduct = async(req, res) =>{
                 error: "Name, Price and Category are required"
             });
         }
-        const product = await Product.create({name, price, category});
+        const product = await Product.create({name, price,description, category});
         res.status(201).json(product);
     } catch (error) {
         res.status(500).json({
@@ -19,10 +20,20 @@ const createProduct = async(req, res) =>{
 
 const getProducts = async (req, res) => {
     try {
-      const { page = 1, limit = 10 } = req.query;
+      const { page = 1, limit = 10, name, category } = req.query;
       const offset = (page - 1) * limit;
-  
+        
+    
+      const whereClause = {};
+      if (name) {
+        whereClause.name = { [Op.like]: `%${name}%` };
+      }
+      if (category) {
+        whereClause.category = category;
+      }
+
       const products = await Product.findAndCountAll({
+        where: whereClause,
         limit: parseInt(limit),
         offset: parseInt(offset)
       });
@@ -82,7 +93,9 @@ const deleteProduct = async (req, res) => {
       }
   
       await product.destroy();
-      res.status(204).send(); 
+      res.status(200).json({
+        message: `Product with ID ${req.params.id} has been successfully deleted.`
+      }); 
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
